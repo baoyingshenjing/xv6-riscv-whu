@@ -18,7 +18,10 @@ OBJS = \
   $K/trap.o \
   $K/plic.o \
   $K/syscall.o \
-  $K/sysproc.o
+  $K/sysproc.o \
+  $K/sleeplock.o \
+  $K/bio.o \
+  $K/virtio_disk.o
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
@@ -141,8 +144,8 @@ UPROGS=\
 	$U/_dorphan\
 	$U/_sync\
 
-fs.img: mkfs/mkfs README $(UPROGS)
-	mkfs/mkfs fs.img README $(UPROGS)
+fs.img: mkfs/mkfs README
+	mkfs/mkfs fs.img README
 
 -include kernel/*.d user/*.d
 
@@ -164,9 +167,12 @@ ifndef CPUS
 CPUS := 3
 endif
 
-QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 128M -smp $(CPUS) -nographic
+QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 128M -smp $(CPUS) -nographic \
+  -global virtio-mmio.force-legacy=false \
+  -drive file=fs.img,if=none,format=raw,id=x0 \
+  -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: check-qemu-version $K/kernel
+qemu: check-qemu-version $K/kernel fs.img
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit: .gdbinit.tmpl-riscv

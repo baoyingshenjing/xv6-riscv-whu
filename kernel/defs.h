@@ -3,6 +3,8 @@ struct cpu;
 struct context;
 struct proc;
 struct spinlock;
+struct buf;
+struct sleeplock;
 
 // printf.c
 int             printf(char*, ...) __attribute__((format(printf, 1, 2)));
@@ -29,6 +31,18 @@ void            sched(void);
 void            yield(void);
 void            sleep(void*, struct spinlock*);
 void            wakeup(void*);
+
+// bio.c
+void            binit(void);
+struct buf*     bread(uint, uint);
+void            brelse(struct buf*);
+void            bwrite(struct buf*);
+
+// sleeplock.c
+void            initsleeplock(struct sleeplock*, char*);
+void            acquiresleep(struct sleeplock*);
+void            releasesleep(struct sleeplock*);
+int             holdingsleep(struct sleeplock*);
 
 // spinlock.c
 void            acquire(struct spinlock*);
@@ -87,6 +101,11 @@ void            argint(int, int*);
 void            argaddr(int, uint64*);
 int             argstr(int, char*, int);
 void            syscall(void);
+
+// virtio_disk.c
+void            virtio_disk_init(void);
+void            virtio_disk_rw(struct buf*, int);
+void            virtio_disk_intr(void);
 
 // plic.c
 void            plicinit(void);

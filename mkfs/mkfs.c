@@ -27,7 +27,8 @@
 
 int nbitmap = FSSIZE / BPB + 1;
 int ninodeblocks = NINODES / IPB + 1;
-int nlog = LOGBLOCKS + 1; // Header followed by LOGBLOCKS data blocks.
+// The course image reserves 30 total log blocks, including its header.
+int nlog = LOGBLOCKS;
 int nmeta;   // Number of meta blocks (boot, sb, nlog, inode, bitmap)
 int nblocks; // Number of data blocks
 

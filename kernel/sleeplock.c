@@ -22,12 +22,8 @@ void
 acquiresleep(struct sleeplock *lk)
 {
   acquire(&lk->lk);
-  while (lk->locked) {
-    sleep_prepare(lk);
-    release(&lk->lk);
-    sleep();
-    acquire(&lk->lk);
-  }
+  while (lk->locked)
+    sleep(lk, &lk->lk);
   lk->locked = 1;
   lk->pid = myproc()->pid;
   release(&lk->lk);

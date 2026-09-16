@@ -21,6 +21,8 @@ main()
     trapinithart();
     plicinit();
     plicinithart();
+    binit();
+    virtio_disk_init();
     __atomic_store_n(&started, 1, __ATOMIC_RELEASE);
   } else {
     while (__atomic_load_n(&started, __ATOMIC_ACQUIRE) == 0)

@@ -24,6 +24,8 @@ kvmmake(void)
   // UART registers used by the stage 1 synchronous output path.
   kvmmap(kpgtbl, UART0, UART0, PGSIZE, PTE_R | PTE_W);
 
+  kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+
   // PLIC registers. The interrupt driver is introduced in stage 3.
   kvmmap(kpgtbl, PLIC, PLIC, 0x4000000, PTE_R | PTE_W);
 

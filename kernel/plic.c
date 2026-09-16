@@ -3,11 +3,11 @@
 #include "riscv.h"
 #include "defs.h"
 
-// The stage 3 PLIC configuration enables only the UART receive interrupt.
 void
 plicinit(void)
 {
   *(uint32 *)(PLIC + UART0_IRQ * 4) = 1;
+  *(uint32 *)(PLIC + VIRTIO0_IRQ * 4) = 1;
 }
 
 void
@@ -15,7 +15,7 @@ plicinithart(void)
 {
   int hart = cpuid();
 
-  *(uint32 *)PLIC_SENABLE(hart) = (1 << UART0_IRQ);
+  *(uint32 *)PLIC_SENABLE(hart) = (1 << UART0_IRQ) | (1 << VIRTIO0_IRQ);
   *(uint32 *)PLIC_SPRIORITY(hart) = 0;
 }
 
