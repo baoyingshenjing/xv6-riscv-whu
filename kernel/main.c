@@ -13,10 +13,14 @@ main()
   if (cpuid() == 0) {
     uartinit();
     printfinit();
+    kinit();
+    kvminit();
+    kvminithart();
     __atomic_store_n(&started, 1, __ATOMIC_RELEASE);
   } else {
     while (__atomic_load_n(&started, __ATOMIC_ACQUIRE) == 0)
       ;
+    kvminithart();
   }
 
   printf("cpu %d is booting!\n", cpuid());

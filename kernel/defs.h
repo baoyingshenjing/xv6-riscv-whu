@@ -23,3 +23,19 @@ void            pop_off(void);
 void            uartinit(void);
 void            uartintr(void);
 void            uartputc_sync(int);
+
+// string.c
+void*           memset(void*, int, uint);
+
+// kalloc.c
+void            kfree(void*);
+void*           kalloc(void);
+void            kinit(void);
+
+// vm.c
+extern pagetable_t kernel_pagetable;
+void            kvminit(void);
+void            kvminithart(void);
+void            kvmmap(pagetable_t, uint64, uint64, uint64, int);
+pte_t*          walk(pagetable_t, uint64, int);
+int             mappages(pagetable_t, uint64, uint64, uint64, int);

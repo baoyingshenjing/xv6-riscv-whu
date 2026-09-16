@@ -8,7 +8,10 @@ OBJS = \
   $K/printf.o \
   $K/uart.o \
   $K/spinlock.o \
-  $K/proc.o
+  $K/proc.o \
+  $K/string.o \
+  $K/kalloc.o \
+  $K/vm.o
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
