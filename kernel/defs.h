@@ -65,6 +65,13 @@ void            uartintr(void);
 void            uartputc_sync(int);
 void            uartwrite(char*, int);
 
+// console.c
+void            consoleinit(void);
+void            consputc(int);
+void            consoleintr(int);
+int             consolewrite(int, uint64, int);
+int             consoleread(int, uint64, int);
+
 // string.c
 void*           memset(void*, int, uint);
 void*           memmove(void*, const void*, uint);

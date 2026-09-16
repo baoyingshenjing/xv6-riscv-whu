@@ -110,8 +110,6 @@ clockintr(void)
   if (cpuid() == 0) {
     acquire(&tickslock);
     ticks++;
-    if (ticks % 30 == 0)
-      printf("T");
     wakeup(&ticks);
     release(&tickslock);
   }

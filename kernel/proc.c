@@ -892,6 +892,8 @@ forkret(void)
   if (first) {
     fsinit(ROOTDEV);
     p->cwd = namei("/");
+    if (kexec("init", (char *[]){"init", 0}) < 0)
+      panic("forkret: exec init");
     first = 0;
   }
   usertrapret();

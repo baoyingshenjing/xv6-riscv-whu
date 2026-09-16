@@ -105,6 +105,6 @@ uartintr(void)
     int c = uartgetc();
     if (c == -1)
       break;
-    uartputc_sync(c);
+    consoleintr(c);
   }
 }

@@ -19,7 +19,7 @@ static char digits[] = "0123456789abcdef";
 static void
 putc(int c)
 {
-  uartputc_sync(c);
+  consputc(c);
 }
 
 static void

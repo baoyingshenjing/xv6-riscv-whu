@@ -123,3 +123,12 @@ void printf(const char *fmt, ...)
 	va_start(ap, fmt);
 	vprintf(1, fmt, ap);
 }
+
+void
+fprintf(int fd, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vprintf(fd, fmt, ap);
+}

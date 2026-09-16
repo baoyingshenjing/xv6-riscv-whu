@@ -152,10 +152,6 @@ sys_write(void)
   int fd;
   uint64 addr;
   int n;
-  int done = 0;
-  char buf[32];
-  struct proc *p = myproc();
-
   argint(0, &fd);
   if (fd == 3)
     return blocktest();
@@ -165,14 +161,47 @@ sys_write(void)
   argint(2, &n);
   if (n < 0)
     return -1;
-  while (done < n) {
-    int m = n - done;
-    if (m > (int)sizeof(buf))
-      m = sizeof(buf);
-    if (copyin(p->pagetable, p->sz, buf, addr + done, m) < 0)
-      return -1;
-    uartwrite(buf, m);
-    done += m;
-  }
-  return done;
+  return consolewrite(1, addr, n);
+}
+
+uint64
+sys_read(void)
+{
+  uint64 addr;
+  int n;
+
+  argaddr(1, &addr);
+  argint(2, &n);
+  if (n < 0)
+    return -1;
+  return consoleread(1, addr, n);
+}
+
+uint64
+sys_chdir(void)
+{
+  char path[MAXPATH];
+  struct inode *ip;
+  struct proc *p = myproc();
+
+  if (argstr(0, path, sizeof(path)) < 0 || (ip = namei(path)) == 0)
+    return -1;
+  begin_op();
+  iput(p->cwd);
+  p->cwd = ip;
+  end_op();
+  return 0;
+}
+
+// Console descriptors are implicit at this stage; init uses these only to
+// establish its conventional 0/1/2 numbering.
+uint64
+sys_open(void) { return 0; }
+uint64
+sys_mknod(void) { return 0; }
+uint64
+sys_dup(void)
+{
+  static int nextfd = 1;
+  return nextfd++;
 }
