@@ -12,6 +12,8 @@ OBJS = \
   $K/string.o \
   $K/kalloc.o \
   $K/vm.o \
+  $K/swtch.o \
+  $K/trampoline.o \
   $K/kernelvec.o \
   $K/trap.o \
   $K/plic.o

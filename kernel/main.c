@@ -16,6 +16,7 @@ main()
     kinit();
     kvminit();
     kvminithart();
+    procinit();
     trapinit();
     trapinithart();
     plicinit();
@@ -30,6 +31,9 @@ main()
   }
 
   printf("cpu %d is booting!\n", cpuid());
+  if (cpuid() == 0)
+    userinit();
+
   intr_on();
   for (;;)
     ;

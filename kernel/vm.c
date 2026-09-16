@@ -8,6 +8,7 @@
 pagetable_t kernel_pagetable;
 
 extern char etext[]; // first address after kernel text, from kernel.ld
+extern char trampoline[];
 
 // Make the direct-map page table needed in stage 2.
 static pagetable_t
@@ -33,6 +34,12 @@ kvmmake(void)
   // Kernel data and all remaining usable physical memory are writable.
   kvmmap(kpgtbl, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext,
          PTE_R | PTE_W);
+
+  // The trampoline is also mapped at the top of every user page table.
+  kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
+
+  // Stage 4 has exactly one process and therefore one kernel stack.
+  proc_mapstacks(kpgtbl);
 
   return kpgtbl;
 }
@@ -111,4 +118,34 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
   }
 
   return 0;
+}
+
+// Create an empty user page table.
+pagetable_t
+uvmcreate(void)
+{
+  pagetable_t pagetable = (pagetable_t)kalloc();
+
+  if (pagetable == 0)
+    return 0;
+  memset(pagetable, 0, PGSIZE);
+  return pagetable;
+}
+
+// Allocate and map the first user code page at virtual address zero.
+void
+uvmfirst(pagetable_t pagetable, uchar *src, uint sz)
+{
+  char *mem;
+
+  if (sz >= PGSIZE)
+    panic("uvmfirst");
+  mem = kalloc();
+  if (mem == 0)
+    panic("uvmfirst: kalloc");
+  memset(mem, 0, PGSIZE);
+  memmove(mem, src, sz);
+  if (mappages(pagetable, 0, PGSIZE, (uint64)mem,
+               PTE_R | PTE_W | PTE_X | PTE_U) != 0)
+    panic("uvmfirst: mappages");
 }
