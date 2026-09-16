@@ -40,9 +40,9 @@ usertrap(void)
   p->trapframe->epc = r_sepc();
 
   if (r_scause() == 8) {
-    printf("get a syscall from proc %d\n", p->pid);
     p->trapframe->epc += 4;
     intr_on();
+    syscall();
   } else if (devintr() == 0) {
     printf("usertrap: scause=0x%lx sepc=0x%lx stval=0x%lx\n", r_scause(),
            r_sepc(), r_stval());

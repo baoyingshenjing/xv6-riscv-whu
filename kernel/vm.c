@@ -89,6 +89,20 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   return &pagetable[PX(0, va)];
 }
 
+// Look up a user virtual address and return its physical-page base.
+uint64
+walkaddr(pagetable_t pagetable, uint64 va)
+{
+  pte_t *pte;
+
+  if (va >= MAXVA)
+    return 0;
+  pte = walk(pagetable, va, 0);
+  if (pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0)
+    return 0;
+  return PTE2PA(*pte);
+}
+
 // Install leaf PTEs for a page-aligned virtual-address range.
 int
 mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
@@ -148,4 +162,145 @@ uvmfirst(pagetable_t pagetable, uchar *src, uint sz)
   if (mappages(pagetable, 0, PGSIZE, (uint64)mem,
                PTE_R | PTE_W | PTE_X | PTE_U) != 0)
     panic("uvmfirst: mappages");
+}
+
+// Remove user mappings beginning at page-aligned va.  Stage 5 uses this for
+// eager heap contraction; absent mappings are harmless.
+void
+uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
+{
+  uint64 a;
+  pte_t *pte;
+
+  if (va % PGSIZE)
+    panic("uvmunmap: not aligned");
+  for (a = va; a < va + npages * PGSIZE; a += PGSIZE) {
+    pte = walk(pagetable, a, 0);
+    if (pte == 0 || (*pte & PTE_V) == 0)
+      continue;
+    if (do_free)
+      kfree((void *)PTE2PA(*pte));
+    *pte = 0;
+  }
+}
+
+// Eagerly allocate user pages in [oldsz, newsz).
+uint64
+uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
+{
+  char *mem;
+  uint64 a;
+
+  if (newsz < oldsz)
+    return oldsz;
+  oldsz = PGROUNDUP(oldsz);
+  for (a = oldsz; a < newsz; a += PGSIZE) {
+    mem = kalloc();
+    if (mem == 0)
+      goto err;
+    memset(mem, 0, PGSIZE);
+    if (mappages(pagetable, a, PGSIZE, (uint64)mem,
+                 PTE_R | PTE_U | xperm) != 0) {
+      kfree(mem);
+      goto err;
+    }
+  }
+  return newsz;
+
+err:
+  uvmunmap(pagetable, oldsz, (a - oldsz) / PGSIZE, 1);
+  return 0;
+}
+
+// Deallocate pages no longer covered by a shrunken user heap.
+uint64
+uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
+{
+  if (newsz >= oldsz)
+    return oldsz;
+  if (PGROUNDUP(newsz) < PGROUNDUP(oldsz))
+    uvmunmap(pagetable, PGROUNDUP(newsz),
+              (PGROUNDUP(oldsz) - PGROUNDUP(newsz)) / PGSIZE, 1);
+  return newsz;
+}
+
+// Copy kernel data into user virtual memory.
+int
+copyout(pagetable_t pagetable, uint64 sz, uint64 dstva, char *src, uint64 len)
+{
+  uint64 n, va0, pa0;
+  pte_t *pte;
+
+  (void)sz;
+  while (len > 0) {
+    va0 = PGROUNDDOWN(dstva);
+    pa0 = walkaddr(pagetable, va0);
+    if (pa0 == 0)
+      return -1;
+    pte = walk(pagetable, va0, 0);
+    if ((*pte & PTE_W) == 0)
+      return -1;
+    n = PGSIZE - (dstva - va0);
+    if (n > len)
+      n = len;
+    memmove((void *)(pa0 + dstva - va0), src, n);
+    len -= n;
+    src += n;
+    dstva = va0 + PGSIZE;
+  }
+  return 0;
+}
+
+// Copy user data into kernel memory.
+int
+copyin(pagetable_t pagetable, uint64 sz, char *dst, uint64 srcva, uint64 len)
+{
+  uint64 n, va0, pa0;
+
+  (void)sz;
+  while (len > 0) {
+    va0 = PGROUNDDOWN(srcva);
+    pa0 = walkaddr(pagetable, va0);
+    if (pa0 == 0)
+      return -1;
+    n = PGSIZE - (srcva - va0);
+    if (n > len)
+      n = len;
+    memmove(dst, (void *)(pa0 + srcva - va0), n);
+    len -= n;
+    dst += n;
+    srcva = va0 + PGSIZE;
+  }
+  return 0;
+}
+
+// Copy a NUL-terminated string from user memory.
+int
+copyinstr(pagetable_t pagetable, uint64 sz, char *dst, uint64 srcva,
+          uint64 max)
+{
+  uint64 n, va0, pa0;
+  int got_null = 0;
+
+  (void)sz;
+  while (!got_null && max > 0) {
+    va0 = PGROUNDDOWN(srcva);
+    pa0 = walkaddr(pagetable, va0);
+    if (pa0 == 0)
+      return -1;
+    n = PGSIZE - (srcva - va0);
+    if (n > max)
+      n = max;
+    char *p = (char *)(pa0 + srcva - va0);
+    while (n-- > 0) {
+      if ((*dst++ = *p++) == '\0') {
+        got_null = 1;
+        break;
+      }
+      max--;
+    }
+    if (!got_null)
+      srcva = va0 + PGSIZE;
+  }
+  return got_null ? 0 : -1;
 }

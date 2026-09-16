@@ -16,7 +16,9 @@ OBJS = \
   $K/trampoline.o \
   $K/kernelvec.o \
   $K/trap.o \
-  $K/plic.o
+  $K/plic.o \
+  $K/syscall.o \
+  $K/sysproc.o
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
