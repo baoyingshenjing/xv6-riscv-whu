@@ -39,3 +39,13 @@ void            kvminithart(void);
 void            kvmmap(pagetable_t, uint64, uint64, uint64, int);
 pte_t*          walk(pagetable_t, uint64, int);
 int             mappages(pagetable_t, uint64, uint64, uint64, int);
+
+// trap.c
+void            trapinit(void);
+void            trapinithart(void);
+
+// plic.c
+void            plicinit(void);
+void            plicinithart(void);
+int             plic_claim(void);
+void            plic_complete(int);

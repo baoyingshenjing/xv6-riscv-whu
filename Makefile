@@ -11,7 +11,10 @@ OBJS = \
   $K/proc.o \
   $K/string.o \
   $K/kalloc.o \
-  $K/vm.o
+  $K/vm.o \
+  $K/kernelvec.o \
+  $K/trap.o \
+  $K/plic.o
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin

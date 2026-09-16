@@ -5,6 +5,7 @@
 #include "defs.h"
 
 void main();
+void timerinit();
 
 // entry.S needs one stack per CPU.
 __attribute__((aligned(16))) char stack0[4096 * NCPU];
@@ -39,10 +40,22 @@ start()
   // enable hardware updates of page table A and D bits
   w_menvcfg(r_menvcfg() | MENVCFG_ADUE);
 
+  // Arrange for supervisor timer interrupts after main() enables them.
+  timerinit();
+
   // keep each CPU's hartid in its tp register, for cpuid().
   int id = r_mhartid();
   w_tp(id);
 
   // switch to supervisor mode and jump to main().
   asm volatile("mret");
+}
+
+// Ask this hart to raise its first supervisor timer interrupt.
+void
+timerinit()
+{
+  w_menvcfg(r_menvcfg() | MENVCFG_STCE);
+  w_mcounteren(r_mcounteren() | 2);
+  w_stimecmp(r_time() + 1000000);
 }

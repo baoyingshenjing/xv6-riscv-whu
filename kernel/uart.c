@@ -59,8 +59,8 @@ uartinit(void)
   // reset and enable FIFOs.
   WriteReg(FCR, FCR_FIFO_ENABLE | FCR_FIFO_CLEAR);
 
-  // Keep UART interrupts disabled in stage 1. uartintr() is retained for
-  // stage 3, after a supervisor trap path has been installed.
+  // Stage 3 handles received bytes through the PLIC and kerneltrap().
+  WriteReg(IER, IER_RX_ENABLE);
 }
 
 // write a byte to the uart without using
