@@ -2,6 +2,7 @@
 #define SYS_exit   2
 #define SYS_wait   3
 #define SYS_kill   6
+#define SYS_exec   7
 #define SYS_getpid 11
 #define SYS_sbrk   12
 #define SYS_sleep  13

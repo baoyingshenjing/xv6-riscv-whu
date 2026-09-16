@@ -331,6 +331,15 @@ uvmfree(pagetable_t pagetable, uint64 sz)
   freewalk(pagetable);
 }
 
+void
+uvmclear(pagetable_t pagetable, uint64 va)
+{
+  pte_t *pte = walk(pagetable, va, 0);
+  if (pte == 0)
+    panic("uvmclear");
+  *pte &= ~PTE_U;
+}
+
 // Copy a parent's ordinary user mappings into a child's page table.
 int
 uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)

@@ -25,6 +25,9 @@
 // there should be one superblock per disk device, but we run with
 // only one device
 struct superblock sb;
+struct devsw devsw[NDEV];
+void ireclaim(int);
+void itrunc(struct inode *);
 
 // Read the super block.
 static void
@@ -85,7 +88,7 @@ balloc(uint dev)
     }
     brelse(bp);
   }
-  printk("balloc: out of blocks\n");
+  printf("balloc: out of blocks\n");
   return 0;
 }
 
@@ -216,7 +219,7 @@ ialloc(uint dev, short type)
     }
     brelse(bp);
   }
-  printk("ialloc: no inodes\n");
+  printf("ialloc: no inodes\n");
   return 0;
 }
 
@@ -393,7 +396,7 @@ ireclaim(int dev)
     struct buf *bp = bread(dev, IBLOCK(inum, sb));
     struct dinode *dip = (struct dinode *)bp->data + inum % IPB;
     if (dip->type != 0 && dip->nlink == 0) { // is an orphaned inode
-      printk("ireclaim: orphaned inode %d\n", inum);
+      printf("ireclaim: orphaned inode %d\n", inum);
       ip = iget(dev, inum);
     }
     brelse(bp);

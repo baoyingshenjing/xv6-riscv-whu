@@ -82,4 +82,6 @@ struct proc {
   pagetable_t pagetable;
   struct trapframe *trapframe;
   struct context context;
+  struct inode *cwd;
+  char name[16];
 };

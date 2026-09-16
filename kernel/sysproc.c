@@ -120,6 +120,21 @@ sys_kill(void)
 }
 
 uint64
+sys_exec(void)
+{
+  char path[MAXPATH];
+  uint64 uargv;
+
+  if (argstr(0, path, sizeof(path)) < 0)
+    return -1;
+  argaddr(1, &uargv);
+  // Stage 8 needs only argv[0] for the supplied programs; the full
+  // user-vector copy is restored with the shell/user-library stage.
+  (void)uargv;
+  return kexec(path, (char *[]){path, 0});
+}
+
+uint64
 sys_uptime(void)
 {
   uint xticks;
