@@ -65,9 +65,18 @@ struct trapframe {
   /* 280 */ uint64 t6;
 };
 
-// Stage 4 has one PCB and no process-state, lock, parent, or file fields.
+enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+
+// Stage 6 restores the scheduling fields, but deliberately leaves file-system
+// state out until the file-system stages.
 struct proc {
+  struct spinlock lock;
+  enum procstate state;
+  void *chan;
+  int killed;
+  int xstate;
   int pid;
+  struct proc *parent;
   uint64 kstack;
   uint64 sz;
   pagetable_t pagetable;

@@ -16,8 +16,19 @@ struct proc*    myproc(void);
 void            procinit(void);
 void            proc_mapstacks(pagetable_t);
 pagetable_t     proc_pagetable(struct proc*);
-void            userinit(void) __attribute__((noreturn));
+void            proc_freepagetable(pagetable_t, uint64);
+void            userinit(void);
 int             growproc(int);
+int             kfork(void);
+void            kexit(int) __attribute__((noreturn));
+int             kwait(uint64);
+int             kkill(int);
+int             killed(struct proc*);
+void            scheduler(void) __attribute__((noreturn));
+void            sched(void);
+void            yield(void);
+void            sleep(void*, struct spinlock*);
+void            wakeup(void*);
 
 // spinlock.c
 void            acquire(struct spinlock*);
@@ -31,6 +42,7 @@ void            pop_off(void);
 void            uartinit(void);
 void            uartintr(void);
 void            uartputc_sync(int);
+void            uartwrite(char*, int);
 
 // string.c
 void*           memset(void*, int, uint);
@@ -58,11 +70,15 @@ uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, uint64, char*, uint64);
 int             copyin(pagetable_t, uint64, char*, uint64, uint64);
 int             copyinstr(pagetable_t, uint64, char*, uint64, uint64);
+int             uvmcopy(pagetable_t, pagetable_t, uint64);
+void            uvmfree(pagetable_t, uint64);
 
 // trap.c
 void            trapinit(void);
 void            trapinithart(void);
 void            usertrapret(void) __attribute__((noreturn));
+extern uint     ticks;
+extern struct spinlock tickslock;
 
 // syscall.c
 int             fetchaddr(uint64, uint64*);

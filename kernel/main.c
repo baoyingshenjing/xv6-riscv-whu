@@ -34,7 +34,5 @@ main()
   if (cpuid() == 0)
     userinit();
 
-  intr_on();
-  for (;;)
-    ;
+  scheduler();
 }

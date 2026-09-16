@@ -27,32 +27,36 @@ trapinithart(void)
   w_stvec((uint64)kernelvec);
 }
 
-// Handle a trap from the sole user process.
 void
 usertrap(void)
 {
+  int which_dev = 0;
   struct proc *p = myproc();
 
   if ((r_sstatus() & SSTATUS_SPP) != 0)
     panic("usertrap: not from user mode");
-
   w_stvec((uint64)kernelvec);
   p->trapframe->epc = r_sepc();
 
   if (r_scause() == 8) {
+    if (killed(p))
+      kexit(-1);
     p->trapframe->epc += 4;
     intr_on();
     syscall();
-  } else if (devintr() == 0) {
+  } else if ((which_dev = devintr()) == 0) {
     printf("usertrap: scause=0x%lx sepc=0x%lx stval=0x%lx\n", r_scause(),
            r_sepc(), r_stval());
     panic("usertrap");
   }
 
+  if (killed(p))
+    kexit(-1);
+  if (which_dev == 2)
+    yield();
   usertrapret();
 }
 
-// Prepare trampoline.S to return to user mode. This path never returns.
 void
 usertrapret(void)
 {
@@ -60,7 +64,6 @@ usertrapret(void)
 
   intr_off();
   w_stvec(TRAMPOLINE + (uservec - trampoline));
-
   p->trapframe->kernel_satp = r_satp();
   p->trapframe->kernel_sp = p->kstack + PGSIZE;
   p->trapframe->kernel_trap = (uint64)usertrap;
@@ -80,6 +83,7 @@ usertrapret(void)
 void
 kerneltrap(void)
 {
+  int which_dev;
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
 
@@ -87,11 +91,14 @@ kerneltrap(void)
     panic("kerneltrap: not from supervisor mode");
   if (intr_get() != 0)
     panic("kerneltrap: interrupts enabled");
-  if (devintr() == 0) {
+  which_dev = devintr();
+  if (which_dev == 0) {
     printf("scause=0x%lx sepc=0x%lx stval=0x%lx\n", r_scause(), sepc,
            r_stval());
     panic("kerneltrap");
   }
+  if (which_dev == 2 && myproc() != 0)
+    yield();
 
   w_sepc(sepc);
   w_sstatus(sstatus);
@@ -105,6 +112,7 @@ clockintr(void)
     ticks++;
     if (ticks % 30 == 0)
       printf("T");
+    wakeup(&ticks);
     release(&tickslock);
   }
   w_stimecmp(r_time() + 1000000);
@@ -125,11 +133,9 @@ devintr(void)
       plic_complete(irq);
     return 1;
   }
-
   if (scause == 0x8000000000000005L) {
     clockintr();
-    return 1;
+    return 2;
   }
-
   return 0;
 }

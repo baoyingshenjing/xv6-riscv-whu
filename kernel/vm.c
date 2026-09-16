@@ -152,7 +152,7 @@ uvmfirst(pagetable_t pagetable, uchar *src, uint sz)
 {
   char *mem;
 
-  if (sz >= PGSIZE)
+  if (sz > PGSIZE)
     panic("uvmfirst");
   mem = kalloc();
   if (mem == 0)
@@ -303,4 +303,59 @@ copyinstr(pagetable_t pagetable, uint64 sz, char *dst, uint64 srcva,
       srcva = va0 + PGSIZE;
   }
   return got_null ? 0 : -1;
+}
+
+// Recursively release page-table pages after all leaf mappings are gone.
+static void
+freewalk(pagetable_t pagetable)
+{
+  for (int i = 0; i < 512; i++) {
+    pte_t pte = pagetable[i];
+    if ((pte & PTE_V) && (pte & (PTE_R | PTE_W | PTE_X)) == 0) {
+      freewalk((pagetable_t)PTE2PA(pte));
+      pagetable[i] = 0;
+    } else if (pte & PTE_V) {
+      panic("freewalk: leaf");
+    }
+  }
+  kfree((void *)pagetable);
+}
+
+void
+uvmfree(pagetable_t pagetable, uint64 sz)
+{
+  if (sz > 0)
+    uvmunmap(pagetable, 0, PGROUNDUP(sz) / PGSIZE, 1);
+  freewalk(pagetable);
+}
+
+// Copy a parent's ordinary user mappings into a child's page table.
+int
+uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
+{
+  pte_t *pte;
+  uint64 pa, i;
+  uint flags;
+  char *mem;
+
+  for (i = 0; i < sz; i += PGSIZE) {
+    pte = walk(old, i, 0);
+    if (pte == 0 || (*pte & PTE_V) == 0)
+      continue;
+    pa = PTE2PA(*pte);
+    flags = PTE_FLAGS(*pte);
+    mem = kalloc();
+    if (mem == 0)
+      goto err;
+    memmove(mem, (char *)pa, PGSIZE);
+    if (mappages(new, i, PGSIZE, (uint64)mem, flags) != 0) {
+      kfree(mem);
+      goto err;
+    }
+  }
+  return 0;
+
+err:
+  uvmunmap(new, 0, i / PGSIZE, 1);
+  return -1;
 }
