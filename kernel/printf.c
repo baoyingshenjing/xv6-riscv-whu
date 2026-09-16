@@ -1,29 +1,26 @@
-//
-// formatted console output -- printk, panic.
-//
+// Formatted kernel output. Stage 1 writes directly to the UART.
 
 #include <stdarg.h>
 
 #include "types.h"
-#include "param.h"
-#include "spinlock.h"
-#include "sleeplock.h"
-#include "fs.h"
-#include "file.h"
-#include "memlayout.h"
 #include "riscv.h"
+#include "spinlock.h"
 #include "defs.h"
-#include "proc.h"
 
-volatile int panicking = 0; // printing a panic message
-volatile int panicked = 0;  // spinning forever at end of a panic
+volatile int panicking = 0;
+volatile int panicked = 0;
 
-// lock to avoid interleaving concurrent printk's.
 static struct {
   struct spinlock lock;
 } pr;
 
 static char digits[] = "0123456789abcdef";
+
+static void
+putc(int c)
+{
+  uartputc_sync(c);
+}
 
 static void
 printint(long long xx, int base, int sign)
@@ -46,22 +43,22 @@ printint(long long xx, int base, int sign)
     buf[i++] = '-';
 
   while (--i >= 0)
-    consputc(buf[i]);
+    putc(buf[i]);
 }
 
 static void
 printptr(uint64 x)
 {
   int i;
-  consputc('0');
-  consputc('x');
+
+  putc('0');
+  putc('x');
   for (i = 0; i < (sizeof(uint64) * 2); i++, x <<= 4)
-    consputc(digits[x >> (sizeof(uint64) * 8 - 4)]);
+    putc(digits[x >> (sizeof(uint64) * 8 - 4)]);
 }
 
-// Print to the console.
 int
-printk(char *fmt, ...)
+printf(char *fmt, ...)
 {
   va_list ap;
   int i, cx, c0, c1, c2;
@@ -73,7 +70,7 @@ printk(char *fmt, ...)
   va_start(ap, fmt);
   for (i = 0; (cx = fmt[i] & 0xff) != 0; i++) {
     if (cx != '%') {
-      consputc(cx);
+      putc(cx);
       continue;
     }
     i++;
@@ -110,20 +107,19 @@ printk(char *fmt, ...)
     } else if (c0 == 'p') {
       printptr(va_arg(ap, uint64));
     } else if (c0 == 'c') {
-      consputc(va_arg(ap, uint));
+      putc(va_arg(ap, uint));
     } else if (c0 == 's') {
       if ((s = va_arg(ap, char *)) == 0)
         s = "(null)";
       for (; *s; s++)
-        consputc(*s);
+        putc(*s);
     } else if (c0 == '%') {
-      consputc('%');
+      putc('%');
     } else if (c0 == 0) {
       break;
     } else {
-      // Print unknown % sequence to draw attention.
-      consputc('%');
-      consputc(c0);
+      putc('%');
+      putc(c0);
     }
   }
   va_end(ap);
@@ -138,15 +134,15 @@ void
 panic(char *s)
 {
   panicking = 1;
-  printk("panic: ");
-  printk("%s\n", s);
-  panicked = 1; // freeze uart output from other CPUs
+  printf("panic: ");
+  printf("%s\n", s);
+  panicked = 1;
   for (;;)
     ;
 }
 
 void
-printkinit(void)
+printfinit(void)
 {
-  initlock(&pr.lock, "pr");
+  initlock(&pr.lock, "printf");
 }

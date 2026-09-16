@@ -3,12 +3,8 @@
 //
 
 #include "types.h"
-#include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
-#include "spinlock.h"
-#include "sleeplock.h"
-#include "proc.h"
 #include "defs.h"
 
 // the UART control registers are memory-mapped
@@ -38,12 +34,8 @@
 #define LSR_RX_READY    (1 << 0) // input is waiting to be read from RHR
 #define LSR_TX_IDLE     (1 << 5) // THR can accept another character to send
 
-// for sending threads to serialize their writes
-static struct sleeplock tx_lock;
-static int tx_chan; // &tx_chan is the "wait channel"
-
-extern volatile int panicking; // from printk.c
-extern volatile int panicked;  // from printk.c
+extern volatile int panicking; // from printf.c
+extern volatile int panicked;  // from printf.c
 
 void
 uartinit(void)
@@ -67,32 +59,8 @@ uartinit(void)
   // reset and enable FIFOs.
   WriteReg(FCR, FCR_FIFO_ENABLE | FCR_FIFO_CLEAR);
 
-  // enable transmit and receive interrupts.
-  WriteReg(IER, IER_TX_ENABLE | IER_RX_ENABLE);
-
-  initsleeplock(&tx_lock, "uart");
-}
-
-// transmit buf[] to the uart. it blocks if the
-// uart is busy, so it cannot be called from
-// interrupts, only from write() system calls.
-void
-uartwrite(char buf[], int n)
-{
-  acquiresleep(&tx_lock);
-
-  int i = 0;
-  while (i < n) {
-    sleep_prepare(&tx_chan);
-    if (ReadReg(LSR) & LSR_TX_IDLE) {
-      WriteReg(THR, buf[i]);
-      i += 1;
-    } else {
-      sleep();
-    }
-  }
-
-  releasesleep(&tx_lock);
+  // Keep UART interrupts disabled in stage 1. uartintr() is retained for
+  // stage 3, after a supervisor trap path has been installed.
 }
 
 // write a byte to the uart without using
@@ -140,16 +108,12 @@ uartintr(void)
 {
   ReadReg(ISR); // acknowledge the interrupt
 
-  if (ReadReg(LSR) & LSR_TX_IDLE) {
-    // UART finished transmitting; wake up sending thread.
-    wakeup(&tx_chan);
-  }
-
-  // read and process incoming characters, if any.
+  // Read and synchronously echo any pending input. This is not reached in
+  // stage 1 because UART interrupts remain disabled.
   while (1) {
     int c = uartgetc();
     if (c == -1)
       break;
-    consoleintr(c);
+    uartputc_sync(c);
   }
 }
