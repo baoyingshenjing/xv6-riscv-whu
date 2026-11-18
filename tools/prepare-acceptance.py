@@ -36,6 +36,8 @@ def main():
         subprocess.run(["tar", "-x", "-C", str(stage_dir)], input=archive, check=True)
     shutil.copy2(REPO / "tools/acceptance-run.sh", dest / "run.sh")
     shutil.copy2(REPO / "docs/acceptance-1-3.md", dest / "README.md")
+    shutil.copy2(REPO / "docs/acceptance-1-3-questions.md",
+                 dest / "acceptance-1-3-questions.md")
     (dest / "SOURCE.json").write_text(json.dumps(refs, indent=2) + "\n")
 
     # Stop each hart after kvminithart(), before the startup message. This

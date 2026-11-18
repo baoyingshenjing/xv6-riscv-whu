@@ -4,6 +4,7 @@
 运行环境为 WSL/Linux + QEMU RISC-V。`main` 保存第 9 阶段的最终实现。
 
 **第一次验收（实验 1–3）：** 已提供[单独的演示与讲解指南](docs/acceptance-1-3.md)。
+同学记录的真实提问对应的解释见[启动、分页、中断追问精讲](docs/acceptance-1-3-questions.md)。
 在本仓库执行 `python3 tools/prepare-acceptance.py`，会生成三个独立源码目录，
 随后运行 `bash acceptance-1-3/run.sh 1`（或 `2`、`3`）即可逐项演示，无需切换分支或标签。
 
