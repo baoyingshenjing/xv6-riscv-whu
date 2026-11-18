@@ -1,5 +1,6 @@
 K=kernel
 U=user
+.DELETE_ON_ERROR:
 
 OBJS = \
   $K/entry.o \
@@ -20,6 +21,7 @@ OBJS = \
   $K/plic.o \
   $K/syscall.o \
   $K/sysproc.o \
+  $K/sysfile.o \
   $K/sleeplock.o \
   $K/bio.o \
   $K/virtio_disk.o \
@@ -95,6 +97,18 @@ $K/kernel: $(OBJS) $K/kernel.ld
 $K/%.o: $K/%.S
 	$(CC) -march=rv64gc -g $(DETFLAGS) -c -o $@ $<
 
+# Bootstrap code executes exec("init", argv) in user mode. Generate its byte
+# array from the assembly so syscall numbers and the embedded code stay in sync.
+$U/initcode: $U/initcode.S $K/syscall.h
+	$(CC) -march=rv64gc -nostdinc -I. -c $U/initcode.S -o $U/initcode.o
+	$(LD) -N -e start -Ttext 0 -o $U/initcode.out $U/initcode.o
+	$(OBJCOPY) -S -O binary $U/initcode.out $U/initcode
+
+$K/initcode.h: $U/initcode
+	xxd -i < $U/initcode > $@
+
+$K/proc.o: $K/initcode.h
+
 tags: $(OBJS)
 	etags kernel/*.S kernel/*.c
 
@@ -141,7 +155,7 @@ fs.img: mkfs/mkfs README $(UPROGS)
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*/*.o */*.d */*.asm */*.sym \
-	$K/kernel fs.img \
+	$K/kernel $K/initcode.h $U/initcode $U/initcode.out fs.img \
 	mkfs/mkfs .gdbinit \
         $U/usys.S \
 	$(UPROGS)
@@ -167,7 +181,7 @@ qemu: check-qemu-version $K/kernel fs.img
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: $K/kernel .gdbinit
+qemu-gdb: $K/kernel fs.img .gdbinit
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
@@ -181,6 +195,9 @@ check-qemu-version:
 		exit 1; \
 	fi
 
-.PHONY: fmt
+.PHONY: fmt test-labs
+test-labs:
+	python3 tests/test-labs.py
+
 fmt:
 	clang-format -i $(wildcard kernel/*.[ch] user/*.[ch] mkfs/*.c)

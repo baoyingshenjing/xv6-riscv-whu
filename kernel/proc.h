@@ -67,8 +67,7 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-// Stage 6 restores the scheduling fields, but deliberately leaves file-system
-// state out until the file-system stages.
+// Process scheduling state and the working directory used for path lookup.
 struct proc {
   struct spinlock lock;
   enum procstate state;

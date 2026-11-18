@@ -17,6 +17,7 @@ main()
     kvminit();
     kvminithart();
     procinit();
+    iinit();
     trapinit();
     trapinithart();
     plicinit();

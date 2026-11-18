@@ -8,5 +8,8 @@ _*
 /mkfs/mkfs
 /kernel/kernel
 /user/usys.S
+/user/initcode
+/user/initcode.out
+/kernel/initcode.h
 .gdbinit
 TAGS

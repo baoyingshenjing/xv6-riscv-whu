@@ -1,4 +1,4 @@
-// Stage 1 kernel interfaces.
+// Interfaces shared by the kernel modules used in the course labs.
 struct cpu;
 struct context;
 struct proc;
@@ -121,10 +121,12 @@ int             argstr(int, char*, int);
 void            syscall(void);
 
 // fs.c and log.c
+void            iinit(void);
 void            fsinit(int);
 struct inode*   idup(struct inode*);
 void            iput(struct inode*);
 void            ilock(struct inode*);
+void            iunlock(struct inode*);
 void            iunlockput(struct inode*);
 struct inode*   namei(char*);
 int             readi(struct inode*, int, uint64, uint, uint);

@@ -40,7 +40,7 @@ kvmmake(void)
   // The trampoline is also mapped at the top of every user page table.
   kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
 
-  // Stage 4 has exactly one process and therefore one kernel stack.
+  // Map each process's kernel stack, leaving an unmapped guard page below it.
   proc_mapstacks(kpgtbl);
 
   return kpgtbl;

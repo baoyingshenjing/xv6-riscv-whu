@@ -1,4 +1,4 @@
-// Formatted kernel output. Stage 1 writes directly to the UART.
+// Formatted kernel output through the synchronous console output path.
 
 #include <stdarg.h>
 
