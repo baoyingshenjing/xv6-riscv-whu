@@ -7,6 +7,7 @@
 同学记录的真实提问对应的解释见[启动、分页、中断追问精讲](docs/acceptance-1-3-questions.md)。
 在本仓库执行 `python3 tools/prepare-acceptance.py`，会生成三个独立源码目录，
 随后运行 `bash acceptance-1-3/run.sh 1`（或 `2`、`3`）即可逐项演示，无需切换分支或标签。
+其中 `stage3/` 已仅保留前三阶段需要的源码和构建规则，适合直接向老师展示。
 
 ## 1. 这九个实验是什么关系？
 

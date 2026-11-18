@@ -7,6 +7,8 @@ import shlex
 import shutil
 import subprocess
 
+from trim_stage3 import trim_stage3
+
 REPO = Path(__file__).resolve().parents[1]
 
 
@@ -34,6 +36,7 @@ def main():
         stage_dir.mkdir()
         archive = subprocess.check_output(["git", "archive", commit], cwd=REPO)
         subprocess.run(["tar", "-x", "-C", str(stage_dir)], input=archive, check=True)
+    trim_stage3(dest / "stage3")
     shutil.copy2(REPO / "tools/acceptance-run.sh", dest / "run.sh")
     shutil.copy2(REPO / "docs/acceptance-1-3.md", dest / "README.md")
     shutil.copy2(REPO / "docs/acceptance-1-3-questions.md",
