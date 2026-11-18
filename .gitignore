@@ -11,5 +11,6 @@ _*
 /user/initcode
 /user/initcode.out
 /kernel/initcode.h
+/acceptance-1-3/
 .gdbinit
 TAGS
