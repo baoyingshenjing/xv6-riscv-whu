@@ -16,5 +16,6 @@ sys_sbrk(void)
 
   if (growproc(n) < 0)
     return -1;
+  printf("sbrk: n=%d oldsz=%lu newsz=%lu\n", n, addr, myproc()->sz);
   return addr;
 }
