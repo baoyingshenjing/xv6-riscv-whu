@@ -114,6 +114,7 @@ int             argstr(int, char*, int);
 void            syscall(void);
 
 // fs.c and log.c
+void            iinit(void);
 void            fsinit(int);
 struct inode*   idup(struct inode*);
 void            iput(struct inode*);

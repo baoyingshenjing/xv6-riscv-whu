@@ -25,7 +25,6 @@
 // there should be one superblock per disk device, but we run with
 // only one device
 struct superblock sb;
-struct devsw devsw[NDEV];
 void ireclaim(int);
 void itrunc(struct inode *);
 

@@ -19,6 +19,7 @@ OBJS = \
   $K/plic.o \
   $K/syscall.o \
   $K/sysproc.o \
+  $K/sysfile.o \
   $K/sleeplock.o \
   $K/bio.o \
   $K/virtio_disk.o \
